@@ -988,3 +988,38 @@ Now you can make changes to the code within the `stable_diffusion_cpp` directory
 ## License
 
 This project is licensed under the terms of the MIT license. See [LICENSE](LICENSE) for details.
+
+---
+
+## 🚀 Pre-compiled Multi-Architecture CUDA Wheels (Fork Distribution)
+
+This fork ([`vquanghuy/stable-diffusion-cpp-python`](https://github.com/vquanghuy/stable-diffusion-cpp-python)) provides pre-compiled, zero-compilation CUDA wheels for Google Colab and high-performance inference pipelines.
+
+Wheels are built as multi-architecture fat binaries with statically linked CUDA runtimes (`libcudart.a`), supporting:
+- **Tesla T4** (`sm_75`)
+- **Ampere A100** (`sm_80`)
+- **Ada Lovelace L4** (`sm_89`)
+- **Forward-compatible PTX** (`sm_89-virtual`)
+
+### Quick Install (Google Colab / Linux x86_64)
+
+Directly install the pre-compiled wheel from [GitHub Releases](https://github.com/vquanghuy/stable-diffusion-cpp-python/releases) without compiling C++ or CUDA kernels:
+
+```bash
+pip install https://github.com/vquanghuy/stable-diffusion-cpp-python/releases/download/v0.4.8/stable_diffusion_cpp_python-0.4.8+cu122-cp310-cp310-linux_x86_64.whl
+```
+
+### Multi-Architecture Wheel Compilation
+
+To reproduce or compile a fat binary wheel on a fresh GPU instance (e.g., Colab T4 / L4):
+
+```bash
+export CMAKE_ARGS="-DSD_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES=75;80;89;89-virtual -DCMAKE_CUDA_RUNTIME_LIBRARY=Static"
+export FORCE_CMAKE=1
+export CMAKE_BUILD_PARALLEL_LEVEL=2
+
+python3 -m pip wheel . --no-deps -w dist/ -v
+```
+
+For guidelines on upstream synchronization and binding development, refer to [AGENTS.md](AGENTS.md) and [CHANGELOG.md](CHANGELOG.md).
+
