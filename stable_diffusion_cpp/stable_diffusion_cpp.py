@@ -19,7 +19,10 @@ from typing import (
     Optional,
 )
 
-from typing_extensions import TypeAlias
+try:
+    from typing_extensions import TypeAlias
+except ImportError:
+    from typing import TypeAlias  # type: ignore
 
 
 # Load the library
@@ -206,7 +209,13 @@ class SampleMethod(IntEnum):
     RES_MULTISTEP_SAMPLE_METHOD = 12
     RES_2S_SAMPLE_METHOD = 13
     ER_SDE_SAMPLE_METHOD = 14
-    SAMPLE_METHOD_COUNT = 15
+    EULER_CFG_PP_SAMPLE_METHOD = 15
+    EULER_A_CFG_PP_SAMPLE_METHOD = 16
+    EULER_GE_SAMPLE_METHOD = 17
+    DPMPP2M_SDE_SAMPLE_METHOD = 18
+    DPMPP2M_SDE_BT_SAMPLE_METHOD = 19
+    LMS_SAMPLE_METHOD = 20
+    SAMPLE_METHOD_COUNT = 21
 
 
 # enum scheduler_t {
@@ -221,6 +230,12 @@ class SampleMethod(IntEnum):
 #     KL_OPTIMAL_SCHEDULER,
 #     LCM_SCHEDULER,
 #     BONG_TANGENT_SCHEDULER,
+#     LTX2_SCHEDULER,
+#     LOGIT_NORMAL_SCHEDULER,
+#     FLUX2_SCHEDULER,
+#     FLUX_SCHEDULER,
+#     BETA_SCHEDULER,
+#     LLADA_IMAGE_SCHEDULER,
 #     SCHEDULER_COUNT
 # };
 class Scheduler(IntEnum):
@@ -235,7 +250,13 @@ class Scheduler(IntEnum):
     KL_OPTIMAL_SCHEDULER = 8
     LCM_SCHEDULER = 9
     BONG_TANGENT_SCHEDULER = 10
-    SCHEDULER_COUNT = 11
+    LTX2_SCHEDULER = 11
+    LOGIT_NORMAL_SCHEDULER = 12
+    FLUX2_SCHEDULER = 13
+    FLUX_SCHEDULER = 14
+    BETA_SCHEDULER = 15
+    LLADA_IMAGE_SCHEDULER = 16
+    SCHEDULER_COUNT = 17
 
 
 # enum prediction_t {
@@ -244,7 +265,9 @@ class Scheduler(IntEnum):
 #     EDM_V_PRED,
 #     FLOW_PRED,
 #     FLUX_FLOW_PRED,
-#     FLUX2_FLOW_PRED,
+#     SEFI_FLOW_PRED,
+#     MINIT2I_FLOW_PRED,
+#     SENSENOVA_U1_FLOW_PRED,
 #     PREDICTION_COUNT
 # };
 class Prediction(IntEnum):
@@ -253,8 +276,10 @@ class Prediction(IntEnum):
     EDM_V_PRED = 2
     FLOW_PRED = 3
     FLUX_FLOW_PRED = 4
-    FLUX2_FLOW_PRED = 5
-    PREDICTION_COUNT = 6
+    SEFI_FLOW_PRED = 5
+    MINIT2I_FLOW_PRED = 6
+    SENSENOVA_U1_FLOW_PRED = 7
+    PREDICTION_COUNT = 8
 
 
 # // same as enum ggml_type
@@ -298,9 +323,13 @@ class Prediction(IntEnum):
 #     // SD_TYPE_IQ4_NL_4_4 = 36,
 #     // SD_TYPE_IQ4_NL_4_8 = 37,
 #     // SD_TYPE_IQ4_NL_8_8 = 38,
-#     SD_TYPE_MXFP4 = 39,  // MXFP4 (1 block)
-#     SD_TYPE_NVFP4 = 40,  // NVFP4 (4 blocks, E4M3 scale)
-#     SD_TYPE_COUNT = 41,
+#     SD_TYPE_MXFP4   = 39,  // MXFP4 (1 block)
+#     SD_TYPE_NVFP4   = 40,  // NVFP4 (4 blocks, E4M3 scale)
+#     SD_TYPE_Q1_0    = 41,
+#     SD_TYPE_Q2_0    = 42,
+#     SD_TYPE_F8_E4M3 = 43,
+#     SD_TYPE_F8_E5M2 = 44,
+#     SD_TYPE_COUNT   = 45,
 # };
 class GGMLType(IntEnum):
     SD_TYPE_F32 = 0
@@ -345,7 +374,54 @@ class GGMLType(IntEnum):
     # SD_TYPE_IQ4_NL_8_8 = 38,
     SD_TYPE_MXFP4 = 39  # MXFP4 (1 block)
     SD_TYPE_NVFP4 = 40  # NVFP4 (4 blocks, E4M3 scale)
-    SD_TYPE_COUNT = 41
+    SD_TYPE_Q1_0 = 41
+    SD_TYPE_Q2_0 = 42
+    SD_TYPE_F8_E4M3 = 43
+    SD_TYPE_F8_E5M2 = 44
+    SD_TYPE_COUNT = 45
+
+
+# enum sd_log_level_t {
+#     SD_LOG_DEBUG,
+#     SD_LOG_VERBOSE,
+#     SD_LOG_INFO,
+#     SD_LOG_WARN,
+#     SD_LOG_ERROR
+# };
+class SDLogLevel(IntEnum):
+    SD_LOG_DEBUG = 0
+    SD_LOG_VERBOSE = 1
+    SD_LOG_INFO = 2
+    SD_LOG_WARN = 3
+    SD_LOG_ERROR = 4
+
+
+# enum sd_vae_format_t {
+#     SD_VAE_FORMAT_AUTO = -1,
+#     SD_VAE_FORMAT_FLUX,
+#     SD_VAE_FORMAT_SD3,
+#     SD_VAE_FORMAT_FLUX2,
+#     SD_VAE_FORMAT_WAN,
+#     SD_VAE_FORMAT_COUNT,
+# };
+class SDVAEFormat(IntEnum):
+    SD_VAE_FORMAT_AUTO = -1
+    SD_VAE_FORMAT_FLUX = 0
+    SD_VAE_FORMAT_SD3 = 1
+    SD_VAE_FORMAT_FLUX2 = 2
+    SD_VAE_FORMAT_WAN = 3
+    SD_VAE_FORMAT_COUNT = 4
+
+
+# enum sd_cancel_mode_t {
+#     SD_CANCEL_ALL,
+#     SD_CANCEL_NEW_LATENTS,
+#     SD_CANCEL_RESET
+# };
+class SDCancelMode(IntEnum):
+    SD_CANCEL_ALL = 0
+    SD_CANCEL_NEW_LATENTS = 1
+    SD_CANCEL_RESET = 2
 
 
 # enum preview_t {
@@ -445,7 +521,6 @@ class sd_embedding_t(ctypes.Structure):
 # -------------------------------------------
 
 
-# typedef struct { const char* model_path; const char* clip_l_path; const char* clip_g_path; const char* clip_vision_path; const char* t5xxl_path; const char* llm_path; const char* llm_vision_path; const char* diffusion_model_path; const char* high_noise_diffusion_model_path; const char* vae_path; const char* taesd_path; const char* control_net_path; const sd_embedding_t* embeddings; uint32_t embedding_count; const char* photo_maker_path; const char* tensor_type_rules; bool vae_decode_only; bool free_params_immediately; int n_threads; enum sd_type_t wtype; enum rng_type_t rng_type; enum rng_type_t sampler_rng_type; enum prediction_t prediction; enum lora_apply_mode_t lora_apply_mode; bool offload_params_to_cpu; bool enable_mmap; bool keep_clip_on_cpu; bool keep_control_net_on_cpu; bool keep_vae_on_cpu; bool flash_attn; bool diffusion_flash_attn; bool tae_preview_only; bool diffusion_conv_direct; bool vae_conv_direct; bool circular_x; bool circular_y; bool force_sdxl_vae_conv_scale; bool chroma_use_dit_mask; bool chroma_use_t5_mask; int chroma_t5_mask_pad; bool qwen_image_zero_cond_t; float max_vram; } sd_ctx_params_t;
 class sd_ctx_params_t(ctypes.Structure):
     _fields_ = [
         ("model_path", ctypes.c_char_p),
@@ -457,40 +532,69 @@ class sd_ctx_params_t(ctypes.Structure):
         ("llm_vision_path", ctypes.c_char_p),
         ("diffusion_model_path", ctypes.c_char_p),
         ("high_noise_diffusion_model_path", ctypes.c_char_p),
+        ("uncond_diffusion_model_path", ctypes.c_char_p),
+        ("embeddings_connectors_path", ctypes.c_char_p),
         ("vae_path", ctypes.c_char_p),
+        ("audio_vae_path", ctypes.c_char_p),
+        ("audio_encoder_path", ctypes.c_char_p),
         ("taesd_path", ctypes.c_char_p),
         ("control_net_path", ctypes.c_char_p),
+        ("ip_adapter_path", ctypes.c_char_p),
+        ("motion_module_path", ctypes.c_char_p),
         ("embeddings", ctypes.POINTER(sd_embedding_t)),
         ("embedding_count", ctypes.c_uint32),
         ("photo_maker_path", ctypes.c_char_p),
+        ("pulid_weights_path", ctypes.c_char_p),
         ("tensor_type_rules", ctypes.c_char_p),
-        ("vae_decode_only", ctypes.c_bool),
-        ("free_params_immediately", ctypes.c_bool),
         ("n_threads", ctypes.c_int),
         ("wtype", ctypes.c_int),  # GGMLType
         ("rng_type", ctypes.c_int),  # RNGType
         ("sampler_rng_type", ctypes.c_int),  # RNGType
         ("prediction", ctypes.c_int),  # Prediction
         ("lora_apply_mode", ctypes.c_int),  # LoraApplyMode
-        ("offload_params_to_cpu", ctypes.c_bool),
         ("enable_mmap", ctypes.c_bool),
-        ("keep_clip_on_cpu", ctypes.c_bool),
-        ("keep_control_net_on_cpu", ctypes.c_bool),
-        ("keep_vae_on_cpu", ctypes.c_bool),
         ("flash_attn", ctypes.c_bool),
         ("diffusion_flash_attn", ctypes.c_bool),
         ("tae_preview_only", ctypes.c_bool),
         ("diffusion_conv_direct", ctypes.c_bool),
         ("vae_conv_direct", ctypes.c_bool),
-        ("circular_x", ctypes.c_bool),
-        ("circular_y", ctypes.c_bool),
         ("force_sdxl_vae_conv_scale", ctypes.c_bool),
-        ("chroma_use_dit_mask", ctypes.c_bool),
-        ("chroma_use_t5_mask", ctypes.c_bool),
-        ("chroma_t5_mask_pad", ctypes.c_int),
-        ("qwen_image_zero_cond_t", ctypes.c_bool),
-        ("max_vram", ctypes.c_float),
+        ("vae_format", ctypes.c_int),  # SDVAEFormat
+        ("max_vram", ctypes.c_char_p),
+        ("disable_prefetch", ctypes.c_bool),
+        ("eager_load", ctypes.c_bool),
+        ("backend", ctypes.c_char_p),
+        ("params_backend", ctypes.c_char_p),
+        ("split_mode", ctypes.c_char_p),
+        ("auto_fit", ctypes.c_bool),
+        ("rpc_servers", ctypes.c_char_p),
+        ("model_args", ctypes.c_char_p),
+        ("disable_segmented_compute", ctypes.c_bool),
+        ("linear_scale", ctypes.c_float),
+        ("attn_scale", ctypes.c_float),
+        ("tokenizer", ctypes.c_char_p),
+        ("sage_attn", ctypes.c_bool),
+        ("conditioning_cache_size", ctypes.c_int),
     ]
+
+
+# -------------------------------------------
+# sd_ctx_params_init
+# -------------------------------------------
+
+
+# SD_API void sd_ctx_params_init(sd_ctx_params_t* sd_ctx_params);
+@ctypes_function(
+    "sd_ctx_params_init",
+    [
+        ctypes.POINTER(sd_ctx_params_t),  # sd_ctx_params
+    ],
+    None,
+)
+def sd_ctx_params_init(
+    sd_ctx_params: sd_ctx_params_t,
+    /,
+) -> None: ...
 
 
 # -------------------------------------------
@@ -547,6 +651,40 @@ def free_sd_ctx(
 
 
 # -------------------------------------------
+# sd_audio_t
+# -------------------------------------------
+
+
+# typedef struct { uint32_t sample_rate; uint32_t channels; uint64_t sample_count; float* data; } sd_audio_t;
+class sd_audio_t(ctypes.Structure):
+    _fields_ = [
+        ("sample_rate", ctypes.c_uint32),
+        ("channels", ctypes.c_uint32),
+        ("sample_count", ctypes.c_uint64),
+        ("data", ctypes.POINTER(ctypes.c_float)),
+    ]
+
+
+# -------------------------------------------
+# free_sd_audio
+# -------------------------------------------
+
+
+# SD_API void free_sd_audio(sd_audio_t* audio);
+@ctypes_function(
+    "free_sd_audio",
+    [
+        ctypes.POINTER(sd_audio_t),  # audio
+    ],
+    None,
+)
+def free_sd_audio(
+    audio: ctypes.POINTER(sd_audio_t),
+    /,
+) -> None: ...
+
+
+# -------------------------------------------
 # sd_image_t
 # -------------------------------------------
 
@@ -581,15 +719,41 @@ class sd_pm_params_t(ctypes.Structure):
 # -------------------------------------------
 
 
-# typedef struct { bool enabled; int tile_size_x; int tile_size_y; float target_overlap; float rel_size_x; float rel_size_y; } sd_tiling_params_t;
 class sd_tiling_params_t(ctypes.Structure):
     _fields_ = [
         ("enabled", ctypes.c_bool),
-        ("tile_size_x", ctypes.c_int),
-        ("tile_size_y", ctypes.c_int),
+        ("temporal_tiling", ctypes.c_bool),
+        ("tile_size_w", ctypes.c_int),
+        ("tile_size_h", ctypes.c_int),
         ("target_overlap", ctypes.c_float),
-        ("rel_size_x", ctypes.c_float),
-        ("rel_size_y", ctypes.c_float),
+        ("rel_size_w", ctypes.c_float),
+        ("rel_size_h", ctypes.c_float),
+        ("extra_tiling_args", ctypes.c_char_p),
+    ]
+
+
+# -------------------------------------------
+# sd_image_preprocess_params_t
+# -------------------------------------------
+
+
+class sd_image_preprocess_params_t(ctypes.Structure):
+    _fields_ = [
+        ("rules", ctypes.c_char_p),
+    ]
+
+
+# -------------------------------------------
+# sd_ref_video_t
+# -------------------------------------------
+
+
+class sd_ref_video_t(ctypes.Structure):
+    _fields_ = [
+        ("frames", ctypes.POINTER(sd_image_t)),
+        ("frame_count", ctypes.c_int),
+        ("fps", ctypes.c_int),
+        ("audio", sd_audio_t),
     ]
 
 
@@ -629,7 +793,6 @@ class sd_guidance_params_t(ctypes.Structure):
 # -------------------------------------------
 
 
-# typedef struct { sd_guidance_params_t guidance; enum scheduler_t scheduler; enum sample_method_t sample_method; int sample_steps; float eta; int shifted_timestep; float* custom_sigmas; int custom_sigmas_count; float flow_shift; } sd_sample_params_t;
 class sd_sample_params_t(ctypes.Structure):
     _fields_ = [
         ("guidance", sd_guidance_params_t),
@@ -641,6 +804,19 @@ class sd_sample_params_t(ctypes.Structure):
         ("custom_sigmas", ctypes.POINTER(ctypes.c_float)),
         ("custom_sigmas_count", ctypes.c_int),
         ("flow_shift", ctypes.c_float),
+        ("extra_sample_args", ctypes.c_char_p),
+    ]
+
+
+# -------------------------------------------
+# sd_pulid_params_t
+# -------------------------------------------
+
+
+class sd_pulid_params_t(ctypes.Structure):
+    _fields_ = [
+        ("id_embedding_path", ctypes.c_char_p),
+        ("id_weight", ctypes.c_float),
     ]
 
 
@@ -698,7 +874,6 @@ class sd_lora_t(ctypes.Structure):
 # -------------------------------------------
 
 
-# typedef struct { bool enabled; enum sd_hires_upscaler_t upscaler; const char* model_path; float scale; int target_width; int target_height; int steps; float denoising_strength; int upscale_tile_size; } sd_hires_params_t;
 class sd_hires_params_t(ctypes.Structure):
     _fields_ = [
         ("enabled", ctypes.c_bool),
@@ -710,6 +885,8 @@ class sd_hires_params_t(ctypes.Structure):
         ("steps", ctypes.c_int),
         ("denoising_strength", ctypes.c_float),
         ("upscale_tile_size", ctypes.c_int),
+        ("custom_sigmas", ctypes.POINTER(ctypes.c_float)),
+        ("custom_sigmas_count", ctypes.c_int),
     ]
 
 
@@ -718,7 +895,6 @@ class sd_hires_params_t(ctypes.Structure):
 # -------------------------------------------
 
 
-# typedef struct { const sd_lora_t* loras; uint32_t lora_count; const char* prompt; const char* negative_prompt; int clip_skip; sd_image_t init_image; sd_image_t* ref_images; int ref_images_count; bool auto_resize_ref_image; bool increase_ref_index; sd_image_t mask_image; int width; int height; sd_sample_params_t sample_params; float strength; int64_t seed; int batch_count; sd_image_t control_image; float control_strength; sd_pm_params_t pm_params; sd_tiling_params_t vae_tiling_params; sd_cache_params_t cache; sd_hires_params_t hires; } sd_img_gen_params_t;
 class sd_img_gen_params_t(ctypes.Structure):
     _fields_ = [
         ("loras", ctypes.POINTER(sd_lora_t)),
@@ -729,8 +905,7 @@ class sd_img_gen_params_t(ctypes.Structure):
         ("init_image", sd_image_t),
         ("ref_images", ctypes.POINTER(sd_image_t)),
         ("ref_images_count", ctypes.c_int),
-        ("auto_resize_ref_image", ctypes.c_bool),
-        ("increase_ref_index", ctypes.c_bool),
+        ("ref_image_args", ctypes.c_char_p),
         ("mask_image", sd_image_t),
         ("width", ctypes.c_int),
         ("height", ctypes.c_int),
@@ -740,10 +915,17 @@ class sd_img_gen_params_t(ctypes.Structure):
         ("batch_count", ctypes.c_int),
         ("control_image", sd_image_t),
         ("control_strength", ctypes.c_float),
+        ("ip_adapter_image", sd_image_t),
+        ("ip_adapter_strength", ctypes.c_float),
         ("pm_params", sd_pm_params_t),
+        ("pulid_params", sd_pulid_params_t),
         ("vae_tiling_params", sd_tiling_params_t),
         ("cache", sd_cache_params_t),
         ("hires", sd_hires_params_t),
+        ("qwen_image_layers", ctypes.c_int),
+        ("circular_x", ctypes.c_bool),
+        ("circular_y", ctypes.c_bool),
+        ("image_preprocess", sd_image_preprocess_params_t),
     ]
 
 
@@ -752,20 +934,45 @@ class sd_img_gen_params_t(ctypes.Structure):
 # -------------------------------------------
 
 
-# SD_API sd_image_t* generate_image(sd_ctx_t* sd_ctx, const sd_img_gen_params_t* sd_img_gen_params);
+# SD_API bool generate_image(sd_ctx_t* sd_ctx, const sd_img_gen_params_t* sd_img_gen_params, sd_image_t** images_out, int* num_images_out);
 @ctypes_function(
     "generate_image",
     [
         sd_ctx_t_p_ctypes,  # sd_ctx
         ctypes.POINTER(sd_img_gen_params_t),  # sd_img_gen_params
+        ctypes.POINTER(ctypes.POINTER(sd_image_t)),  # images_out
+        ctypes.POINTER(ctypes.c_int),  # num_images_out
     ],
-    ctypes.POINTER(sd_image_t),
+    ctypes.c_bool,
 )
 def generate_image(
     sd_ctx: sd_ctx_t_p,
     sd_img_gen_params: sd_img_gen_params_t,
+    images_out: ctypes.POINTER(ctypes.POINTER(sd_image_t)),
+    num_images_out: ctypes.POINTER(ctypes.c_int),
     /,
-) -> CtypesArray[sd_image_t]: ...
+) -> bool: ...
+
+
+# -------------------------------------------
+# free_sd_images
+# -------------------------------------------
+
+
+# SD_API void free_sd_images(sd_image_t* result_images, int num_images);
+@ctypes_function(
+    "free_sd_images",
+    [
+        ctypes.POINTER(sd_image_t),  # result_images
+        ctypes.c_int,  # num_images
+    ],
+    None,
+)
+def free_sd_images(
+    result_images: ctypes.POINTER(sd_image_t),
+    num_images: int,
+    /,
+) -> None: ...
 
 
 # -------------------------------------------
@@ -773,7 +980,6 @@ def generate_image(
 # -------------------------------------------
 
 
-# typedef struct { const sd_lora_t* loras; uint32_t lora_count; const char* prompt; const char* negative_prompt; int clip_skip; sd_image_t init_image; sd_image_t end_image; sd_image_t* control_frames; int control_frames_size; int width; int height; sd_sample_params_t sample_params; sd_sample_params_t high_noise_sample_params; float moe_boundary; float strength; int64_t seed; int video_frames; float vace_strength; sd_tiling_params_t vae_tiling_params; sd_cache_params_t cache; } sd_vid_gen_params_t;
 class sd_vid_gen_params_t(ctypes.Structure):
     _fields_ = [
         ("loras", ctypes.POINTER(sd_lora_t)),
@@ -783,6 +989,12 @@ class sd_vid_gen_params_t(ctypes.Structure):
         ("clip_skip", ctypes.c_int),
         ("init_image", sd_image_t),
         ("end_image", sd_image_t),
+        ("ref_images", ctypes.POINTER(sd_image_t)),
+        ("ref_images_count", ctypes.c_int),
+        ("ref_videos", ctypes.POINTER(sd_ref_video_t)),
+        ("ref_videos_count", ctypes.c_int),
+        ("ref_audios", ctypes.POINTER(sd_audio_t)),
+        ("ref_audios_count", ctypes.c_int),
         ("control_frames", ctypes.POINTER(sd_image_t)),
         ("control_frames_size", ctypes.c_int),
         ("width", ctypes.c_int),
@@ -793,9 +1005,14 @@ class sd_vid_gen_params_t(ctypes.Structure):
         ("strength", ctypes.c_float),
         ("seed", ctypes.c_int64),
         ("video_frames", ctypes.c_int),
+        ("fps", ctypes.c_int),
         ("vace_strength", ctypes.c_float),
         ("vae_tiling_params", sd_tiling_params_t),
         ("cache", sd_cache_params_t),
+        ("hires", sd_hires_params_t),
+        ("circular_x", ctypes.c_bool),
+        ("circular_y", ctypes.c_bool),
+        ("image_preprocess", sd_image_preprocess_params_t),
     ]
 
 
@@ -804,25 +1021,68 @@ class sd_vid_gen_params_t(ctypes.Structure):
 # -------------------------------------------
 
 
-num_frames_out_p = NewType("num_frames_out_p", int)
-
-
-# SD_API sd_image_t* generate_video(sd_ctx_t* sd_ctx, const sd_vid_gen_params_t* sd_vid_gen_params, int* num_frames_out);
+# SD_API bool generate_video(sd_ctx_t* sd_ctx, const sd_vid_gen_params_t* sd_vid_gen_params, sd_image_t** frames_out, int* num_frames_out, sd_audio_t** audio_out, int* fps_out);
 @ctypes_function(
     "generate_video",
     [
         sd_ctx_t_p_ctypes,  # sd_ctx
         ctypes.POINTER(sd_vid_gen_params_t),  # sd_vid_gen_params
+        ctypes.POINTER(ctypes.POINTER(sd_image_t)),  # frames_out
         ctypes.POINTER(ctypes.c_int),  # num_frames_out
+        ctypes.POINTER(ctypes.POINTER(sd_audio_t)),  # audio_out
+        ctypes.POINTER(ctypes.c_int),  # fps_out
     ],
-    ctypes.POINTER(sd_image_t),
+    ctypes.c_bool,
 )
 def generate_video(
     sd_ctx: sd_ctx_t_p,
     sd_vid_gen_params: sd_vid_gen_params_t,
-    num_frames_out: num_frames_out_p,
+    frames_out: ctypes.POINTER(ctypes.POINTER(sd_image_t)),
+    num_frames_out: ctypes.POINTER(ctypes.c_int),
+    audio_out: ctypes.POINTER(ctypes.POINTER(sd_audio_t)),
+    fps_out: ctypes.POINTER(ctypes.c_int),
     /,
-) -> CtypesArray[sd_image_t]: ...
+) -> bool: ...
+
+
+# -------------------------------------------
+# sd_cancel_generation
+# -------------------------------------------
+
+
+# SD_API void sd_cancel_generation(sd_ctx_t* sd_ctx, enum sd_cancel_mode_t mode);
+@ctypes_function(
+    "sd_cancel_generation",
+    [
+        sd_ctx_t_p_ctypes,  # sd_ctx
+        ctypes.c_int,  # mode
+    ],
+    None,
+)
+def sd_cancel_generation(
+    sd_ctx: sd_ctx_t_p,
+    mode: int,
+    /,
+) -> None: ...
+
+
+# -------------------------------------------
+# sd_get_model_version_name
+# -------------------------------------------
+
+
+# SD_API const char* sd_get_model_version_name(const sd_ctx_t* sd_ctx);
+@ctypes_function(
+    "sd_get_model_version_name",
+    [
+        sd_ctx_t_p_ctypes,  # sd_ctx
+    ],
+    ctypes.c_char_p,
+)
+def sd_get_model_version_name(
+    sd_ctx: sd_ctx_t_p,
+    /,
+) -> bytes: ...
 
 
 # -------------------------------------------
@@ -866,6 +1126,55 @@ def sd_get_default_scheduler(
 
 
 # -------------------------------------------
+# sd_ctx ControlNet hot-swap APIs
+# -------------------------------------------
+
+
+# SD_API bool sd_ctx_load_control_net(sd_ctx_t* sd_ctx, const char* path);
+@ctypes_function(
+    "sd_ctx_load_control_net",
+    [
+        sd_ctx_t_p_ctypes,  # sd_ctx
+        ctypes.c_char_p,  # path
+    ],
+    ctypes.c_bool,
+)
+def sd_ctx_load_control_net(
+    sd_ctx: sd_ctx_t_p,
+    path: bytes,
+    /,
+) -> bool: ...
+
+
+# SD_API bool sd_ctx_unload_control_net(sd_ctx_t* sd_ctx);
+@ctypes_function(
+    "sd_ctx_unload_control_net",
+    [
+        sd_ctx_t_p_ctypes,  # sd_ctx
+    ],
+    ctypes.c_bool,
+)
+def sd_ctx_unload_control_net(
+    sd_ctx: sd_ctx_t_p,
+    /,
+) -> bool: ...
+
+
+# SD_API bool sd_ctx_has_control_net(const sd_ctx_t* sd_ctx);
+@ctypes_function(
+    "sd_ctx_has_control_net",
+    [
+        sd_ctx_t_p_ctypes,  # sd_ctx
+    ],
+    ctypes.c_bool,
+)
+def sd_ctx_has_control_net(
+    sd_ctx: sd_ctx_t_p,
+    /,
+) -> bool: ...
+
+
+# -------------------------------------------
 # upscaler_ctx_t
 # -------------------------------------------
 
@@ -885,24 +1194,26 @@ upscaler_ctx_t_p_ctypes = ctypes.POINTER(upscaler_ctx_t)
 # -------------------------------------------
 
 
-# SD_API upscaler_ctx_t* new_upscaler_ctx(const char* esrgan_path, bool offload_params_to_cpu, bool direct, int n_threads, int tile_size);
+# SD_API upscaler_ctx_t* new_upscaler_ctx(const char* esrgan_path, bool direct, int n_threads, int tile_size, const char* backend, const char* params_backend);
 @ctypes_function(
     "new_upscaler_ctx",
     [
         ctypes.c_char_p,  # esrgan_path
-        ctypes.c_bool,  # offload_params_to_cpu
         ctypes.c_bool,  # direct
         ctypes.c_int,  # n_threads
         ctypes.c_int,  # tile_size
+        ctypes.c_char_p,  # backend
+        ctypes.c_char_p,  # params_backend
     ],
     upscaler_ctx_t_p_ctypes,
 )
 def new_upscaler_ctx(
     esrgan_path: bytes,
-    offload_params_to_cpu: bool,
     direct: bool,
     n_threads: int,
     tile_size: int,
+    backend: Optional[bytes] = None,
+    params_backend: Optional[bytes] = None,
     /,
 ) -> upscaler_ctx_t_p: ...
 
@@ -931,22 +1242,26 @@ def free_upscaler_ctx(
 # -------------------------------------------
 
 
-# SD_API sd_image_t upscale(upscaler_ctx_t* upscaler_ctx, sd_image_t input_image, uint32_t upscale_factor);
+# SD_API bool upscale(upscaler_ctx_t* upscaler_ctx, sd_image_t input_image, uint32_t upscale_factor, sd_image_t** images_out, int* num_images_out);
 @ctypes_function(
     "upscale",
     [
         upscaler_ctx_t_p_ctypes,  # upscaler_ctx
         sd_image_t,  # input_image
         ctypes.c_uint32,  # upscale_factor
+        ctypes.POINTER(ctypes.POINTER(sd_image_t)),  # images_out
+        ctypes.POINTER(ctypes.c_int),  # num_images_out
     ],
-    sd_image_t,
+    ctypes.c_bool,
 )
 def upscale(
     upscaler_ctx: upscaler_ctx_t_p,
     input_image: sd_image_t,
     upscale_factor: int,
+    images_out: ctypes.POINTER(ctypes.POINTER(sd_image_t)),
+    num_images_out: ctypes.POINTER(ctypes.c_int),
     /,
-) -> sd_image_t: ...
+) -> bool: ...
 
 
 # -------------------------------------------
@@ -966,6 +1281,106 @@ def get_upscale_factor(
     upscaler_ctx: upscaler_ctx_t_p,
     /,
 ) -> int: ...
+
+
+# -------------------------------------------
+# get_upscaler_model_scale
+# -------------------------------------------
+
+
+# SD_API int get_upscaler_model_scale(const char* model_path);
+@ctypes_function(
+    "get_upscaler_model_scale",
+    [
+        ctypes.c_char_p,  # model_path
+    ],
+    ctypes.c_int,
+)
+def get_upscaler_model_scale(
+    model_path: bytes,
+    /,
+) -> int: ...
+
+
+# -------------------------------------------
+# ADetailer
+# -------------------------------------------
+
+
+class adetailer_ctx_t(ctypes.Structure):
+    pass
+
+
+adetailer_ctx_t_p = NewType("adetailer_ctx_t_p", int)
+adetailer_ctx_t_p_ctypes = ctypes.POINTER(adetailer_ctx_t)
+
+
+class sd_adetailer_params_t(ctypes.Structure):
+    _fields_ = [
+        ("prompt", ctypes.c_char_p),
+        ("negative_prompt", ctypes.c_char_p),
+        ("extra_ad_args", ctypes.c_char_p),
+    ]
+
+
+# SD_API adetailer_ctx_t* new_adetailer_ctx(const char* detector_path, int n_threads, const char* backend, const char* params_backend);
+@ctypes_function(
+    "new_adetailer_ctx",
+    [
+        ctypes.c_char_p,  # detector_path
+        ctypes.c_int,  # n_threads
+        ctypes.c_char_p,  # backend
+        ctypes.c_char_p,  # params_backend
+    ],
+    adetailer_ctx_t_p_ctypes,
+)
+def new_adetailer_ctx(
+    detector_path: bytes,
+    n_threads: int,
+    backend: Optional[bytes] = None,
+    params_backend: Optional[bytes] = None,
+    /,
+) -> adetailer_ctx_t_p: ...
+
+
+# SD_API void free_adetailer_ctx(adetailer_ctx_t* adetailer_ctx);
+@ctypes_function(
+    "free_adetailer_ctx",
+    [
+        adetailer_ctx_t_p_ctypes,  # adetailer_ctx
+    ],
+    None,
+)
+def free_adetailer_ctx(
+    adetailer_ctx: adetailer_ctx_t_p,
+    /,
+) -> None: ...
+
+
+# SD_API bool adetail_image(adetailer_ctx_t* adetailer_ctx, sd_ctx_t* sd_ctx, sd_image_t input_image, const sd_adetailer_params_t* adetailer_params, const sd_img_gen_params_t* inpaint_params, sd_image_t** images_out, int* num_images_out);
+@ctypes_function(
+    "adetail_image",
+    [
+        adetailer_ctx_t_p_ctypes,  # adetailer_ctx
+        sd_ctx_t_p_ctypes,  # sd_ctx
+        sd_image_t,  # input_image
+        ctypes.POINTER(sd_adetailer_params_t),  # adetailer_params
+        ctypes.POINTER(sd_img_gen_params_t),  # inpaint_params
+        ctypes.POINTER(ctypes.POINTER(sd_image_t)),  # images_out
+        ctypes.POINTER(ctypes.c_int),  # num_images_out
+    ],
+    ctypes.c_bool,
+)
+def adetail_image(
+    adetailer_ctx: adetailer_ctx_t_p,
+    sd_ctx: sd_ctx_t_p,
+    input_image: sd_image_t,
+    adetailer_params: sd_adetailer_params_t,
+    inpaint_params: sd_img_gen_params_t,
+    images_out: ctypes.POINTER(ctypes.POINTER(sd_image_t)),
+    num_images_out: ctypes.POINTER(ctypes.c_int),
+    /,
+) -> bool: ...
 
 
 # -------------------------------------------
@@ -998,6 +1413,45 @@ def convert(
 
 
 # -------------------------------------------
+# convert_with_components
+# -------------------------------------------
+
+
+# SD_API bool convert_with_components(const char* model_path, const char* clip_l_path, const char* clip_g_path, const char* t5xxl_path, const char* diffusion_model_path, const char* vae_path, const char* output_path, enum sd_type_t output_type, const char* tensor_type_rules, bool convert_name, int n_threads);
+@ctypes_function(
+    "convert_with_components",
+    [
+        ctypes.c_char_p,  # model_path
+        ctypes.c_char_p,  # clip_l_path
+        ctypes.c_char_p,  # clip_g_path
+        ctypes.c_char_p,  # t5xxl_path
+        ctypes.c_char_p,  # diffusion_model_path
+        ctypes.c_char_p,  # vae_path
+        ctypes.c_char_p,  # output_path
+        ctypes.c_int,  # output_type
+        ctypes.c_char_p,  # tensor_type_rules
+        ctypes.c_bool,  # convert_name
+        ctypes.c_int,  # n_threads
+    ],
+    ctypes.c_bool,
+)
+def convert_with_components(
+    model_path: bytes,
+    clip_l_path: bytes,
+    clip_g_path: bytes,
+    t5xxl_path: bytes,
+    diffusion_model_path: bytes,
+    vae_path: bytes,
+    output_path: bytes,
+    output_type: int,
+    tensor_type_rules: bytes,
+    convert_name: bool,
+    n_threads: int,
+    /,
+) -> bool: ...
+
+
+# -------------------------------------------
 # preprocess_canny
 # -------------------------------------------
 
@@ -1024,6 +1478,128 @@ def preprocess_canny(
     inverse: bool,
     /,
 ) -> bool: ...
+
+
+# -------------------------------------------
+# IMatrix APIs
+# -------------------------------------------
+
+
+# SD_API bool load_imatrix(const char* imatrix_path);
+@ctypes_function(
+    "load_imatrix",
+    [
+        ctypes.c_char_p,
+    ],
+    ctypes.c_bool,
+)
+def load_imatrix(imatrix_path: bytes, /) -> bool: ...
+
+
+# SD_API void save_imatrix(const char* imatrix_path);
+@ctypes_function(
+    "save_imatrix",
+    [
+        ctypes.c_char_p,
+    ],
+    None,
+)
+def save_imatrix(imatrix_path: bytes, /) -> None: ...
+
+
+# SD_API void enable_imatrix_collection(void);
+@ctypes_function(
+    "enable_imatrix_collection",
+    [],
+    None,
+)
+def enable_imatrix_collection() -> None: ...
+
+
+# SD_API void disable_imatrix_collection(void);
+@ctypes_function(
+    "disable_imatrix_collection",
+    [],
+    None,
+)
+def disable_imatrix_collection() -> None: ...
+
+
+# -------------------------------------------
+# Device Listing
+# -------------------------------------------
+
+
+# SD_API size_t sd_list_devices(char* buffer, size_t buffer_size);
+@ctypes_function(
+    "sd_list_devices",
+    [
+        ctypes.c_char_p,
+        ctypes.c_size_t,
+    ],
+    ctypes.c_size_t,
+)
+def sd_list_devices(buffer: Optional[ctypes.c_char_p], buffer_size: int, /) -> int: ...
+
+
+# -------------------------------------------
+# Parameter Inits
+# -------------------------------------------
+
+
+# SD_API void sd_sample_params_init(sd_sample_params_t* sample_params);
+@ctypes_function(
+    "sd_sample_params_init",
+    [
+        ctypes.POINTER(sd_sample_params_t),
+    ],
+    None,
+)
+def sd_sample_params_init(sample_params: sd_sample_params_t, /) -> None: ...
+
+
+# SD_API void sd_img_gen_params_init(sd_img_gen_params_t* sd_img_gen_params);
+@ctypes_function(
+    "sd_img_gen_params_init",
+    [
+        ctypes.POINTER(sd_img_gen_params_t),
+    ],
+    None,
+)
+def sd_img_gen_params_init(sd_img_gen_params: sd_img_gen_params_t, /) -> None: ...
+
+
+# SD_API void sd_vid_gen_params_init(sd_vid_gen_params_t* sd_vid_gen_params);
+@ctypes_function(
+    "sd_vid_gen_params_init",
+    [
+        ctypes.POINTER(sd_vid_gen_params_t),
+    ],
+    None,
+)
+def sd_vid_gen_params_init(sd_vid_gen_params: sd_vid_gen_params_t, /) -> None: ...
+
+
+# SD_API void sd_cache_params_init(sd_cache_params_t* cache_params);
+@ctypes_function(
+    "sd_cache_params_init",
+    [
+        ctypes.POINTER(sd_cache_params_t),
+    ],
+    None,
+)
+def sd_cache_params_init(cache_params: sd_cache_params_t, /) -> None: ...
+
+
+# SD_API void sd_hires_params_init(sd_hires_params_t* hires_params);
+@ctypes_function(
+    "sd_hires_params_init",
+    [
+        ctypes.POINTER(sd_hires_params_t),
+    ],
+    None,
+)
+def sd_hires_params_init(hires_params: sd_hires_params_t, /) -> None: ...
 
 
 # ===========================================

@@ -663,11 +663,13 @@ class StableDiffusion:
 
         _vae_tiling_params = sd_cpp.sd_tiling_params_t(
             enabled=vae_tiling,
-            tile_size_x=tile_size_x,
-            tile_size_y=tile_size_y,
+            temporal_tiling=False,
+            tile_size_w=tile_size_x,
+            tile_size_h=tile_size_y,
             target_overlap=vae_tile_overlap,
-            rel_size_x=rel_size_x,
-            rel_size_y=rel_size_y,
+            rel_size_w=rel_size_x,
+            rel_size_h=rel_size_y,
+            extra_tiling_args=None,
         )
 
         _guidance_params = sd_cpp.sd_guidance_params_t(
@@ -693,18 +695,21 @@ class StableDiffusion:
             custom_sigmas=_custom_sigmas,
             custom_sigmas_count=_custom_sigmas_count,
             flow_shift=flow_shift,
+            extra_sample_args=None,
         )
 
         _hires_params = sd_cpp.sd_hires_params_t(
             enabled=hires,
-            path=hires_path.encode("utf-8"),
             upscaler=hires_upscaler,
+            model_path=hires_path.encode("utf-8") if hires_path else None,
             scale=hires_scale,
-            width=hires_width,
-            height=hires_height,
+            target_width=hires_width,
+            target_height=hires_height,
             steps=hires_steps,
             denoising_strength=hires_denoising_strength,
             upscale_tile_size=hires_upscale_tile_size,
+            custom_sigmas=None,
+            custom_sigmas_count=0,
         )
 
         _params = sd_cpp.sd_img_gen_params_t(
@@ -715,9 +720,8 @@ class StableDiffusion:
             clip_skip=clip_skip,
             init_image=self._format_init_image(init_image, width, height),
             ref_images=_ref_images_pointer,
-            auto_resize_ref_image=auto_resize_ref_image,
             ref_images_count=ref_images_count,
-            increase_ref_index=increase_ref_index,
+            ref_image_args=None,
             mask_image=self._format_mask_image(mask_image, width, height),
             width=width,
             height=height,
@@ -727,24 +731,41 @@ class StableDiffusion:
             batch_count=batch_count,
             control_image=self._format_control_image(control_image, canny, width, height),
             control_strength=control_strength,
+            ip_adapter_image=sd_cpp.sd_image_t(),
+            ip_adapter_strength=0.0,
             pm_params=_pm_params,
+            pulid_params=sd_cpp.sd_pulid_params_t(),
             vae_tiling_params=_vae_tiling_params,
             cache=_cache_params,
             hires=_hires_params,
+            qwen_image_layers=0,
+            circular_x=self.circular_x,
+            circular_y=self.circular_y,
+            image_preprocess=sd_cpp.sd_image_preprocess_params_t(),
         )
 
         # Log system info
         log_event(level=2, message=sd_cpp.sd_get_system_info().decode("utf-8"))
 
+        _images_out = ctypes.POINTER(sd_cpp.sd_image_t)()
+        _num_images_out = ctypes.c_int(0)
         with suppress_stdout_stderr(disable=self.verbose):
             # Generate images
-            _c_images = sd_cpp.generate_image(
+            _success = sd_cpp.generate_image(
                 self.model,
                 ctypes.byref(_params),
+                ctypes.byref(_images_out),
+                ctypes.byref(_num_images_out),
             )
 
-        # Convert C array to Python list of images
-        images = self._sd_image_t_p_to_images(_c_images, batch_count, upscale_factor)
+        if not _success or not _images_out:
+            raise RuntimeError("Failed to generate images")
+
+        try:
+            # Convert C array to Python list of images
+            images = self._sd_image_t_p_to_images(_images_out, _num_images_out.value, upscale_factor)
+        finally:
+            sd_cpp.free_sd_images(_images_out, _num_images_out.value)
 
         # -------------------------------------------
         # Attach Image Metadata
@@ -1133,11 +1154,13 @@ class StableDiffusion:
 
         _vae_tiling_params = sd_cpp.sd_tiling_params_t(
             enabled=vae_tiling,
-            tile_size_x=tile_size_x,
-            tile_size_y=tile_size_y,
+            temporal_tiling=False,
+            tile_size_w=tile_size_x,
+            tile_size_h=tile_size_y,
             target_overlap=vae_tile_overlap,
-            rel_size_x=rel_size_x,
-            rel_size_y=rel_size_y,
+            rel_size_w=rel_size_x,
+            rel_size_h=rel_size_y,
+            extra_tiling_args=None,
         )
 
         _guidance_params = sd_cpp.sd_guidance_params_t(
@@ -1163,6 +1186,7 @@ class StableDiffusion:
             custom_sigmas=_custom_sigmas,
             custom_sigmas_count=_custom_sigmas_count,
             flow_shift=flow_shift,
+            extra_sample_args=None,
         )
 
         _params = sd_cpp.sd_vid_gen_params_t(
@@ -1173,6 +1197,12 @@ class StableDiffusion:
             clip_skip=clip_skip,
             init_image=self._format_init_image(init_image, width, height),
             end_image=self._format_init_image(end_image, width, height),
+            ref_images=None,
+            ref_images_count=0,
+            ref_videos=None,
+            ref_videos_count=0,
+            ref_audios=None,
+            ref_audios_count=0,
             control_frames=_control_frames_pointer,
             control_frames_size=control_frames_size,
             width=width,
@@ -1183,25 +1213,45 @@ class StableDiffusion:
             strength=strength,
             seed=seed,
             video_frames=video_frames,
+            fps=0,
             vace_strength=vace_strength,
             vae_tiling_params=_vae_tiling_params,
             cache=_cache_params,
+            hires=sd_cpp.sd_hires_params_t(),
+            circular_x=self.circular_x,
+            circular_y=self.circular_y,
+            image_preprocess=sd_cpp.sd_image_preprocess_params_t(),
         )
 
         # Log system info
         log_event(level=2, message=sd_cpp.sd_get_system_info().decode("utf-8"))
 
-        _num_results = ctypes.c_int()
+        _frames_out = ctypes.POINTER(sd_cpp.sd_image_t)()
+        _num_frames_out = ctypes.c_int(0)
+        _audio_out = ctypes.POINTER(sd_cpp.sd_audio_t)()
+        _fps_out = ctypes.c_int(0)
+
         with suppress_stdout_stderr(disable=self.verbose):
             # Generate the video
-            _c_images = sd_cpp.generate_video(
+            _success = sd_cpp.generate_video(
                 self.model,
                 ctypes.byref(_params),
-                ctypes.byref(_num_results),
+                ctypes.byref(_frames_out),
+                ctypes.byref(_num_frames_out),
+                ctypes.byref(_audio_out),
+                ctypes.byref(_fps_out),
             )
 
-        # Convert C array to Python list of images
-        images = self._sd_image_t_p_to_images(_c_images, int(_num_results.value), upscale_factor)
+        if not _success or not _frames_out:
+            raise RuntimeError("Failed to generate video")
+
+        try:
+            # Convert C array to Python list of images
+            images = self._sd_image_t_p_to_images(_frames_out, int(_num_frames_out.value), upscale_factor)
+        finally:
+            sd_cpp.free_sd_images(_frames_out, int(_num_frames_out.value))
+            if _audio_out:
+                sd_cpp.free_sd_audio(_audio_out)
 
         # -------------------------------------------
         # Attach Image Metadata
@@ -1343,18 +1393,29 @@ class StableDiffusion:
             # Convert the image to a byte array
             image_bytes = self._image_to_sd_image_t_p(image)
 
+            _images_out = ctypes.POINTER(sd_cpp.sd_image_t)()
+            _num_images_out = ctypes.c_int(0)
             with suppress_stdout_stderr(disable=self.verbose):
                 # Upscale the image
-                image = sd_cpp.upscale(
+                _success = sd_cpp.upscale(
                     self.upscaler,
                     image_bytes,
                     upscale_factor,
+                    ctypes.byref(_images_out),
+                    ctypes.byref(_num_images_out),
                 )
 
-            # Load the image from the C sd_image_t and convert it to a PIL Image
-            image = self._dereference_sd_image_t_p(image)
-            image = self._bytes_to_image(image["data"], image["width"], image["height"])
-            upscaled_images.append(image)
+            if not _success or not _images_out or _num_images_out.value == 0:
+                raise RuntimeError("Failed to upscale image")
+
+            try:
+                # Load the image from the C sd_image_t and convert it to a PIL Image
+                c_image = _images_out.contents
+                image_dict = self._dereference_sd_image_t_p(c_image)
+                pil_image = self._bytes_to_image(image_dict["data"], image_dict["width"], image_dict["height"])
+                upscaled_images.append(pil_image)
+            finally:
+                sd_cpp.free_sd_images(_images_out, _num_images_out.value)
 
         return upscaled_images
 
@@ -1853,13 +1914,24 @@ class StableDiffusion:
 
             # Upscale the image
             if upscale_factor > 1:
-                c_image = sd_cpp.upscale(
+                _images_out = ctypes.POINTER(sd_cpp.sd_image_t)()
+                _num_images_out = ctypes.c_int(0)
+                _success = sd_cpp.upscale(
                     self.upscaler,
                     c_image,
                     upscale_factor,
+                    ctypes.byref(_images_out),
+                    ctypes.byref(_num_images_out),
                 )
-
-            image = self._dereference_sd_image_t_p(c_image)
+                if _success and _images_out and _num_images_out.value > 0:
+                    try:
+                        image = self._dereference_sd_image_t_p(_images_out.contents)
+                    finally:
+                        sd_cpp.free_sd_images(_images_out, _num_images_out.value)
+                else:
+                    image = self._dereference_sd_image_t_p(c_image)
+            else:
+                image = self._dereference_sd_image_t_p(c_image)
             images.append(image)
 
         # Return the list of images
@@ -1949,6 +2021,12 @@ SAMPLE_METHOD_MAP = {
     "res_multistep": SampleMethod.RES_MULTISTEP_SAMPLE_METHOD,
     "res_2s": SampleMethod.RES_2S_SAMPLE_METHOD,
     "er_sde": SampleMethod.ER_SDE_SAMPLE_METHOD,
+    "euler_cfg_pp": SampleMethod.EULER_CFG_PP_SAMPLE_METHOD,
+    "euler_a_cfg_pp": SampleMethod.EULER_A_CFG_PP_SAMPLE_METHOD,
+    "euler_ge": SampleMethod.EULER_GE_SAMPLE_METHOD,
+    "dpm++2m_sde": SampleMethod.DPMPP2M_SDE_SAMPLE_METHOD,
+    "dpm++2m_sde_bt": SampleMethod.DPMPP2M_SDE_BT_SAMPLE_METHOD,
+    "lms": SampleMethod.LMS_SAMPLE_METHOD,
     "sample_method_count": SampleMethod.SAMPLE_METHOD_COUNT,
 }
 
@@ -1965,6 +2043,12 @@ SCHEDULER_MAP = {
     "kl_optimal": Scheduler.KL_OPTIMAL_SCHEDULER,
     "lcm": Scheduler.LCM_SCHEDULER,
     "bong_tangent": Scheduler.BONG_TANGENT_SCHEDULER,
+    "ltx2": Scheduler.LTX2_SCHEDULER,
+    "logit_normal": Scheduler.LOGIT_NORMAL_SCHEDULER,
+    "flux2": Scheduler.FLUX2_SCHEDULER,
+    "flux": Scheduler.FLUX_SCHEDULER,
+    "beta": Scheduler.BETA_SCHEDULER,
+    "llada_image": Scheduler.LLADA_IMAGE_SCHEDULER,
     "scheduler_count": Scheduler.SCHEDULER_COUNT,
 }
 
@@ -1974,7 +2058,10 @@ PREDICTION_MAP = {
     "edm_v": Prediction.EDM_V_PRED,
     "flow": Prediction.FLOW_PRED,
     "flux_flow": Prediction.FLUX_FLOW_PRED,
-    "flux2_flow": Prediction.FLUX2_FLOW_PRED,
+    "flux2_flow": getattr(Prediction, "FLUX2_FLOW_PRED", Prediction.FLUX_FLOW_PRED),
+    "sefi_flow": Prediction.SEFI_FLOW_PRED,
+    "minit2i_flow": Prediction.MINIT2I_FLOW_PRED,
+    "sensenova_u1_flow": Prediction.SENSENOVA_U1_FLOW_PRED,
     "default": Prediction.PREDICTION_COUNT,  # Default
 }
 
@@ -2019,6 +2106,10 @@ GGML_TYPE_MAP = {
     # "iq4_nl_8_8": GGMLType.SD_TYPE_IQ4_NL_8_8,
     "mxfp4": GGMLType.SD_TYPE_MXFP4,
     "NVFP4": GGMLType.SD_TYPE_NVFP4,
+    "q1_0": GGMLType.SD_TYPE_Q1_0,
+    "q2_0": GGMLType.SD_TYPE_Q2_0,
+    "f8_e4m3": GGMLType.SD_TYPE_F8_E4M3,
+    "f8_e5m2": GGMLType.SD_TYPE_F8_E5M2,
     "default": GGMLType.SD_TYPE_COUNT,  # Default
 }
 
